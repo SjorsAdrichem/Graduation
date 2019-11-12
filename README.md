@@ -1,2 +1,2 @@
 # Graduation
-Matlab files
+Matlab files for graduation project
