@@ -125,7 +125,6 @@ ROI_Marges(4)= 20; %bottom
 [nn, mm] = size(images.(imagenames{1}));
 % Pixel dimensions (in um)
 pixelsize = [width_image/mm height_image/nn];
-
 % Create pixel position columns
 x = linspace(1,mm*pixelsize(1),mm);
 y = linspace(1,nn*pixelsize(2),nn);
