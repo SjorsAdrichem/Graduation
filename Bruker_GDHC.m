@@ -1,14 +1,12 @@
 close all; clearvars; clc
 warning off
 
-%PUNT STRAIN 
-
 %% =========================
 %  Directory options
 %  =========================
-imageFolder =       'C:\Users\s130023\Desktop\Bruker data\Test viscose\Images_processing';
+imageFolder =       'C:\Users\s130023\Desktop\Bruker data\Test UPy-PEG 10k\Images_processing';
 formulaFolder =     'C:\Users\s130023\Documents\MATLAB';
-saveoutcomeFolder = 'C:\Users\s130023\Desktop\Bruker data\Test viscose\Outcome';
+saveoutcomeFolder = 'C:\Users\s130023\Desktop\Bruker data\Test UPy-PEG 10k\Outcome';
 
 cd(formulaFolder);
 
@@ -44,7 +42,7 @@ corr_y = round((corr/height_image)*pixels_y);   %round number of pixels in y aft
 %  =========================
 
 options.list        = true;                         %true if coarsesteps are specified explicitly
-options.coarsesteps = 1;                          %no coarsening == 1
+options.coarsesteps = 1;                            %no coarsening == 1
 options.convcrit    = 1e-4;                         %convergence criteria
 options.maxiter     = 500;                          %max. amount of interations per step
 options.interpmeth  = 'cubic';                      %interpolation method
@@ -57,7 +55,7 @@ options.comment     = 'Testing version 1.0.0 RC';   %a comment for in the logfil
 options.tempfile    = 'globalDIC2Dtmp';             %reduce the memory footprint
 options.verbose     = 2;                            %sets the level of output
 options.fulloutput  = true;                         %a more full output (gdic) structure
-options.debug       = true;                         %creates DbugXX structures for coarse graining step containing all usefull variables
+options.debug       = false;                        %creates DbugXX structures for coarse graining step containing all usefull variables
 options.plot        = true;                         %generate a lot of figures for each coarse grain step
 options.datatype    = 'double';                     %set floating point precision
 
@@ -68,15 +66,14 @@ pol                 = num2str(options.order);
 %  =========================
 
 % Change directory
-myFolder = imageFolder;
-if ~isfolder(myFolder)
-    errorMessage = sprintf('Error: The following folder does not exist:\n%s', myFolder);
+if ~isfolder(imageFolder)
+    errorMessage = sprintf('Error: The following folder does not exist:\n%s', imageFolder);
     uiwait(warndlg(errorMessage));
     return
 end
 
 % Get information of images in the folder
-filePattern = fullfile(myFolder, '*.OPD');  %build full file name from parts
+filePattern = fullfile(imageFolder, '*.OPD');  %build full file name from parts
 imagefiles = dir(filePattern);              %create struct with image information
 
 for i = 1:length(imagefiles)                %break up name of image for information
@@ -98,28 +95,29 @@ for i = 1:length(sortfiles)
     end
 end
 
-%% =========================
-%  Calculation
-%  =========================
-
 % Load the reference image(s) & deformed image(s)
 imagenames = cell(1,length(imagefiles)); %preallocating
 for i = 1:length(imagefiles)
     currentfilename = imagefiles(i).name;
     ix = strfind(currentfilename,'.');
     imagenames{i} = (currentfilename(1:ix(1)-1));   
-    OPD.(imagenames{i}) = opdread(fullfile(myFolder, currentfilename));
+    OPD.(imagenames{i}) = opdread(fullfile(imageFolder, currentfilename));
     A = OPD.(imagenames{i}).Z;
     images.(imagenames{i}) = A;
 end
+clear ix ixx aa i n sortfiles imagefiless A filePattern currentfilename OPD
 
 amountcalculations = length(imagefiles)-1;
 
-%% Determine pixelsize and plot ROI       
-ROI_Marges(1)= 35; %left
-ROI_Marges(2)= 15; %right
-ROI_Marges(3)= 20; %top      
-ROI_Marges(4)= 20; %bottom
+%% =========================
+%  ROI
+%  =========================
+
+% Determine pixelsize and plot ROI       
+ROI_Marges(1)= 10; %left
+ROI_Marges(2)= 16; %right
+ROI_Marges(3)= 16; %top      
+ROI_Marges(4)= 18; %bottom
 
 % Size of f (and g)
 [nn, mm] = size(images.(imagenames{1}));
@@ -131,17 +129,15 @@ y = linspace(1,nn*pixelsize(2),nn);
 
 if RegionDet == 1 %plot ROI of reference image
     figure; hold on
-    reference = images.(imagenames{1});
-    imagesc(x,y,reference)
+    imagesc(x,y,images.(imagenames{1}))
     
     % plot ROI without corrections
     plot([ROI_Marges(1) ROI_Marges(1) width_image-ROI_Marges(2) width_image-ROI_Marges(2)], ...
         [ROI_Marges(3) height_image-ROI_Marges(4) ROI_Marges(3) height_image-ROI_Marges(4)],'or')
     plot([ROI_Marges(1) width_image-ROI_Marges(2) width_image-ROI_Marges(2) ROI_Marges(1) ROI_Marges(1)], ...
-        [ROI_Marges(3) ROI_Marges(3) height_image-ROI_Marges(4) height_image-ROI_Marges(4) ROI_Marges(3)],'--r')
-    
+        [ROI_Marges(3) ROI_Marges(3) height_image-ROI_Marges(4) height_image-ROI_Marges(4) ROI_Marges(3)],'--r') 
     % plot ROI with corrections
-     plot([ROI_Marges(1)+corr ROI_Marges(1)+corr width_image-ROI_Marges(2)-corr width_image-ROI_Marges(2)-corr], ...
+    plot([ROI_Marges(1)+corr ROI_Marges(1)+corr width_image-ROI_Marges(2)-corr width_image-ROI_Marges(2)-corr], ...
         [ROI_Marges(3)+corr height_image-ROI_Marges(4)-corr ROI_Marges(3)+corr height_image-ROI_Marges(4)-corr],'ob')
     plot([ROI_Marges(1)+corr width_image-ROI_Marges(2)-corr width_image-ROI_Marges(2)-corr ROI_Marges(1)+corr ROI_Marges(1)+corr], ...
         [ROI_Marges(3)+corr ROI_Marges(3)+corr height_image-ROI_Marges(4)-corr height_image-ROI_Marges(4)-corr ROI_Marges(3)+corr],'--b')
@@ -149,19 +145,20 @@ if RegionDet == 1 %plot ROI of reference image
     set(gca,'YDir','Reverse');
     xlabel('x-coordinate [\mum]'); ylabel('y-coordinate [\mum]'); title('ROI determination')
     colorbar
+
+    strainPoint = [55, 30]; %point [in micron] where strain is determined in ROI 
+    plot(strainPoint(1),strainPoint(2),'ko','MarkerSize',10);
+    strainPoint(1) = round((strainPoint(1)-ROI_Marges(1))/pixelsize(1));
+    strainPoint(2) = round((strainPoint(2)-ROI_Marges(3))/pixelsize(2));
+
     pause(3)
 end
+clear x y
 
-strainPoint = [82, 200];
+return 
 
-% return
-
-%%
-EXX = zeros(1,length(imagefiles)-1); %preallocating
-EYY = EXX; EXY = EXX;
-EXX_proj = EXX; EYY_proj = EXX; EXY_proj = EXX; 
-EXXp = EXX; EYYp = EXX; EXYp = EXX;
-res = EXX;
+%% Calculation loop
+[EXX, EYY, EXY, EXX_proj, EYY_proj, EXY_proj, EXXp, EYYp, EXYp, res] = deal(zeros(1,length(imagefiles)-1)); %preallocating
 
 dis_x_max = 0.5817;
 dis_x_min = 0.312;
@@ -192,9 +189,8 @@ while amountcalculations ~= n
 
     f = images.(imagenames{1});
     g = images.(imagenames{n+1});
-    g_ref = g;
-    
-    g = images.(imagenames{n+1});
+%     g_ref = g;
+%     g = images.(imagenames{n+1});
     for i = 1:h
         g(i,:) = circshift(g(i,:),X_disp(i,1));
     end
@@ -206,8 +202,8 @@ while amountcalculations ~= n
         
     % Plot the position field figures
     gname = char(imagenames(n+1));
-    currentfilename=[fname '  -  ' gname '  -  ' pol ' order poly'];
-    logfilename=[ currentfilename '.txt'];
+    currentfilename = [fname '  -  ' gname '  -  ' pol ' order poly'];
+    logfilename = [ currentfilename '.txt'];
     cd(imageFolder)
     
     if (exist(logfilename,'file') == 2)
@@ -225,14 +221,16 @@ while amountcalculations ~= n
 
     % Save the position field figures
     if printpdf == 1
-        currentfilename=['Position field  ' fname '  -  ' gname '  -  ' pol ' order poly'];
+        currentfilename = ['Position field  ' fname '  -  ' gname '  -  ' pol ' order poly'];
         cd(saveoutcomeFolder);
-%         savepdf(currentfilename,myFolder);
+%         savepdf(currentfilename,imageFolder);
         savefig(currentfilename)
         saveas(gcf,[currentfilename '.png'])
         cd(formulaFolder);
     end            
-    
+
+    cd(formulaFolder);
+
     % =====================================
     % Start the digital image correlation
     % =====================================
@@ -248,7 +246,7 @@ while amountcalculations ~= n
     % Initial Guess
     Ndof = size(phi,1);
 
-    if n==1
+    if n == 1
         u = zeros(Ndof,1)
 %         cd(imageFolder)
 %         uu = load('init.mat');
@@ -282,12 +280,14 @@ while amountcalculations ~= n
     if printpdf == 1
         currentfilename=['Position field with ROI  ' fname '  -  ' gname '  -  ' pol ' order poly'];
         cd(saveoutcomeFolder)    
-%         savepdf(currentfilename,myFolder);
+%         savepdf(currentfilename,imageFolder);
         savefig(currentfilename)
         saveas(gcf,[currentfilename '.png'])
         cd(formulaFolder);
     end                                
-            
+  
+    cd(formulaFolder);
+
     % The working part
     f = images.(imagenames{1});            
     figure(10);
@@ -301,7 +301,7 @@ while amountcalculations ~= n
     options.mask = mask_in;
     %--------------------------------------
     
-    [gdic, crs, convergence, mask, M, m, Phi, b]  = globalDIC2D(f,g,x,y,u,phi,options);
+    [gdic, crs, convergence, mask, M, m, Phi, b] = globalDIC2D(f,g,x,y,u,phi,options);
     NaN_mask = NaN_mask(crs.indy,crs.indx);
 
     % =========================
@@ -333,7 +333,7 @@ while amountcalculations ~= n
     if printpdf == 1
         currentfilename = ['Residual field  ' fname '  -  ' gname '  -  ' pol ' order poly'];
     	cd(saveoutcomeFolder)
-%         savepdf(currentfilename,myFolder);
+%         savepdf(currentfilename,imageFolder);
         savefig(currentfilename)
         saveas(gcf,[currentfilename '.png'])
         cd(formulaFolder)
@@ -351,7 +351,7 @@ while amountcalculations ~= n
     if printpdf == 1
         currentfilename = ['Displacement fields  ' fname '  -  ' gname '  -  ' pol ' order poly'];
         cd(saveoutcomeFolder);
-%         savepdf(currentfilename,myFolder);
+%         savepdf(currentfilename,imageFolder);
         savefig(currentfilename)        
         saveas(gcf,[currentfilename '.png'])
         cd(formulaFolder)
@@ -403,14 +403,13 @@ while amountcalculations ~= n
         plotop.colorlabel = {'\epsilon [%]'};
         cd(formulaFolder);     
         hh = globalDICplotstrains(r_correct,x,y,Exx_jan_true,Eyy_jan_true,plotop);
-%         hh = globalDICplotstrains(r_correct,x,y,Exx,Eyy,plotop);
     end  
     
     % Save strain fields image(s)
     if printpdf == 1
         currentfilename = ['Strain fields  ' fname '  -  ' gname '  -  ' pol ' order poly'];
         cd(saveoutcomeFolder)
-%         savepdf(currentfilename,myFolder);
+%         savepdf(currentfilename,imageFolder);
         savefig(currentfilename)
         saveas(gcf,[currentfilename '.png'])
         cd(formulaFolder);     
@@ -447,8 +446,6 @@ cd(imageFolder);
 save('init.mat','INIT','-v7.3')
 save('strains.mat','EXX','EXY','EYY','EXXp','EXYp','EYYp','EXX_proj','EXY_proj','EYY_proj','-v7.3') 
 save('residual.mat','res','-v7.3')
-res_field = gdic.r_correct;
-save('res_field.mat','res_field','-v7.3')
 save('set_data.mat','ROI_Marges','fname','gname','-v7.3')
 
 figure; hold on
