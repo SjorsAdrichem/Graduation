@@ -4,9 +4,9 @@ warning off
 %% =========================
 %  Directory options
 %  =========================
-imageFolder =       'C:\Users\s130023\Desktop\Bruker data\Test UPy-PEG 10k\Images_processing';
+imageFolder =       'C:\Users\s130023\Desktop\Bruker data\Test UPy-PEG 10k 2\Images_processing';
 formulaFolder =     'C:\Users\s130023\Documents\MATLAB';
-saveoutcomeFolder = 'C:\Users\s130023\Desktop\Bruker data\Test UPy-PEG 10k\Outcome';
+saveoutcomeFolder = 'C:\Users\s130023\Desktop\Bruker data\Test UPy-PEG 10k 2\Outcome';
 
 cd(formulaFolder);
 
@@ -22,14 +22,12 @@ expands = 2;                    %Expandings of the mask, x rows of pixels
 corr = 4;                       %microns correction for polynomial fit; 2 for 200x, 4 for 100x
 % width_image = 175.7;            %Width image Bruker 50x [um]
 % height_image = 132.8;           %Height image Bruker 50x [um]
+% width_image = 147.8;            %Width image Bruker 100x 0.55x[um]
+% height_image = 111.7;           %Height image Bruker 100x 0.55x[um]
 width_image = 80;               %Width image Bruker 100x [um]
 height_image = 60.4;            %Height image Bruker 100x [um]
 % width_image = 39.3;             %Width image Bruker 100x 2x[um]
 % height_image = 29.7;            %Height image Bruker 100x 2x[um]
-% width_image = 254.64;           %Width image Sensofar 50x [um]
-% height_image = 190.90;          %Height image Sensofar 50x [um]
-% width_image = 84.83;            %Width image Sensofar 150x [um]
-% height_image = 63.60;           %Height image Sensofar 150x [um]
 pixels_x = 1376;
 pixels_y = 1040;
 corr_x = round((corr/width_image)*pixels_x);    %round number of pixels in x after correction 
@@ -91,19 +89,19 @@ for i = 1:length(sortfiles)
     end
 end
 
-% Load the reference image(s) & deformed image(s)
+% Load the reference image & deformed image(s)
 imagenames = cell(1,length(imagefiles)); %preallocating
 for i = 1:length(imagefiles)
     currentfilename = imagefiles(i).name;
     ix = strfind(currentfilename,'.');
     imagenames{i} = (currentfilename(1:ix(1)-1));   
-    OPD.(imagenames{i}) = opdread(fullfile(imageFolder, currentfilename));
-    A = OPD.(imagenames{i}).Z;
-    images.(imagenames{i}) = A;
 end
-clear ix ixx aa i n sortfiles imagefiless A filePattern currentfilename OPD
 
-return
+OPD.(imagenames{1}) = opdread(fullfile(imageFolder, [char(imagenames(1)) '.OPD']));
+A = OPD.(imagenames{1}).Z;
+image_f = A;
+
+clear ix ixx aa i n sortfiles imagefiless A filePattern currentfilename OPD
 
 amountcalculations = length(imagefiles)-1;
 
@@ -112,13 +110,13 @@ amountcalculations = length(imagefiles)-1;
 %  =========================
 
 % Determine pixelsize and plot ROI       
-ROI_Marges(1)= 40; %left
-ROI_Marges(2)= 2; %right
-ROI_Marges(3)= 21; %top      
-ROI_Marges(4)= 23; %bottom
+ROI_Marges(1)= 11; %left
+ROI_Marges(2)= 12; %right
+ROI_Marges(3)= 18; %top      
+ROI_Marges(4)= 18; %bottom
 
 % Size of f (and g)
-[nn, mm] = size(images.(imagenames{1}));
+[nn, mm] = size(image_f);
 % Pixel dimensions (in um)
 pixelsize = [width_image/mm height_image/nn];
 % Create pixel position columns
@@ -127,7 +125,7 @@ y = linspace(1,nn*pixelsize(2),nn);
 
 if RegionDet == 1 %plot ROI of reference image
     figure; hold on
-    imagesc(x,y,images.(imagenames{1}))
+    imagesc(x,y,image_f)
     
     % plot ROI without corrections
     plot([ROI_Marges(1) ROI_Marges(1) width_image-ROI_Marges(2) width_image-ROI_Marges(2)], ...
@@ -144,29 +142,19 @@ if RegionDet == 1 %plot ROI of reference image
     xlabel('x-coordinate [\mum]'); ylabel('y-coordinate [\mum]'); title('ROI determination')
     colorbar
 
-    strainPoint = [55, 30]; %point [in micron] where strain is determined in ROI 
+    strainPoint = [40, 30]; %point [in micron] where strain is determined in ROI 
     plot(strainPoint(1),strainPoint(2),'ko','MarkerSize',10);
     strainPoint(1) = round((strainPoint(1)-ROI_Marges(1))/pixelsize(1));
     strainPoint(2) = round((strainPoint(2)-ROI_Marges(3))/pixelsize(2));
     
-%     pause(3)
+    pause(3)
 end
 clear x y
 
+% return 
+
 %% Calculation loop
 [EXX, EYY, EXY, EXX_proj, EYY_proj, EXY_proj, EXXp, EYYp, EXYp, res] = deal(zeros(1,length(imagefiles)-1)); %preallocating
-
-% [h, w] = size(images.(imagenames{1}));
-% dis_x_max = 0.5817;
-% dis_x_min = 0.312;
-% pix_dis_max = round(dis_x_max/pixelsize(1));
-% pix_dis_min = round(dis_x_min/pixelsize(1));
-% pix_dif = (pix_dis_max-pix_dis_min)/h;
-% 
-% for i = 1:h
-%     X_disp(i,1:w) = pix_dis_min+(i-1)*pix_dif;
-% end
-% X_disp = round(X_disp);
 
 fname = char(imagenames(1));
 
@@ -176,9 +164,14 @@ y1 = ROI_Marges(3)/pixelsize(2);
 y2 = ROI_Marges(4)/pixelsize(2);
 
 n = 1; %image number, and index for saving
-while amountcalculations ~= n
+while amountcalculations ~= n-1
     fprintf('n = %d \n',n);
     close all;
+
+    OPD.(imagenames{n+1}) = opdread(fullfile(imageFolder, [char(imagenames(n+1)) '.OPD']));
+    A = OPD.(imagenames{n+1}).Z;
+    image_g = A;
+    clear OPD A
     
     % Create pixel position columns
     x = linspace(1,mm*pixelsize(1),mm);
@@ -187,13 +180,13 @@ while amountcalculations ~= n
     x = x - mean(x);
     y = y - mean(y);
         
-    f = images.(imagenames{1});
-    g = images.(imagenames{n+1});
-        
-    hh = fspecial('gaussian', [3 3], 0.8) ;
-    f = imfilter(f,hh,'symmetric','conv');
-    g = imfilter(g,hh,'symmetric','conv');
-    cd(formulaFolder);
+%     f = image_f;
+%     g = image_g;
+%         
+%     H = fspecial('gaussian', [3 3], 0.8) ;
+%     f = imfilter(f,H,'symmetric','conv');
+%     g = imfilter(g,H,'symmetric','conv');
+%     cd(formulaFolder);
         
     % Plot the position field figures
     gname = char(imagenames(n+1));
@@ -211,7 +204,7 @@ while amountcalculations ~= n
 %         plotop.name     = [ 'Position field: ' currentfilename] ;
 %         plotop.titles   = {'f','g'};
 %         plotop.colorlabel = {}; 
-%         [hh, B] = globalDICplotposition(x,y,f,g,plotop); 
+%         [HH, B] = globalDICplotposition(x,y,f,g,plotop); 
 %         hold on
 %     end
 
@@ -287,10 +280,10 @@ while amountcalculations ~= n
     cd(formulaFolder);
             
     % The working part
-    f = images.(imagenames{1});            
+    f = image_f;            
     figure(10);
     imagesc(x,y,f);              
-    g = images.(imagenames{n+1});
+    g = image_g;
     g(isnan(g)) = nanmean(g(:));
 
     [exp_mask, NaN_mask] = Maskexpand(isnan(f),expands);           
@@ -343,7 +336,7 @@ while amountcalculations ~= n
 %         plotop.name  = 'Residual' ;
 %         plotop.titles   = {'r'};
 %         plotop.colorlabel = {};
-%         hh = globalDICplotresidual(x,y,r_correct,plotop);
+%         HH = globalDICplotresidual(x,y,r_correct,plotop);
 %     end
             
 %     % Save the residual field figure(s)
@@ -361,7 +354,7 @@ while amountcalculations ~= n
 %         plotop.name = 'Displacement Fields';
 %         plotop.titles = {'Ux','Uy','Uz'};
 %         plotop.colorlabel = {'U_i [\mum]'};
-%         hh = globalDICplotdisplacement(r_correct,x,y,Ux,Uy,Uz,plotop);
+%         HH = globalDICplotdisplacement(r_correct,x,y,Ux,Uy,Uz,plotop);
 %     end
             
 %     % Save the displacement fields figure(s)
@@ -379,12 +372,12 @@ while amountcalculations ~= n
     % ========================
 %     dx = mean(diff(x));
 %     dy = mean(diff(y));
-
-    [X, Y] = meshgrid(x,y);
-    [nnn, mmm] = size(X);
-
-    % Assume innitially flat surface
-    Z = zeros(nnn,mmm);
+% 
+%     [X, Y] = meshgrid(x,y);
+%     [nnn, mmm] = size(X);
+% 
+%     % Assume innitially flat surface
+%     Z = zeros(nnn,mmm);
     
     if n == 1
         x_short = x;
@@ -419,7 +412,7 @@ while amountcalculations ~= n
 %         plotop.titles = {'\epsilon_x','\epsilon_y'};
 %         plotop.colorlabel = {'\epsilon [%]'};
 %         cd(formulaFolder);     
-%         hh = globalDICplotstrains(r_correct,x,y,Exx_jan_true,Eyy_jan_true,plotop);
+%         HH = globalDICplotstrains(r_correct,x,y,Exx_jan_true,Eyy_jan_true,plotop);
 %     end  
     
 %     % Save strain fields image(s)
@@ -432,42 +425,43 @@ while amountcalculations ~= n
 %         cd(formulaFolder);     
 %     end
 
-    currentfilename=['GDIC output  ' fname '  -  ' gname];
+%     currentfilename=['GDIC output  ' fname '  -  ' gname];
 %     GDIC_output(s).name=currentfilename;
 %     GDIC_output(s).gdic=gdic;
-    
-    if amountcalculations == n
-        if savegdic == 1
-            cd(saveoutcomeFolder)
-            save ('GDIC_output_Pol2_p1', 'GDIC_output','-v7.3')
-%             save ('GDIC_output_Bruker_Best_VSI_50x_Y_POL_0', 'GDIC_output','-v7.3')
-        end
-    else
-    end
+% 
+%     if amountcalculations == n
+%         if savegdic == 1
+%             cd(saveoutcomeFolder)
+%             save ('GDIC_output_Pol2_p1', 'GDIC_output','-v7.3')
+% %             save ('GDIC_output_Bruker_Best_VSI_50x_Y_POL_0', 'GDIC_output','-v7.3')
+%         end
+%     end
     
     cd(formulaFolder);
      
     if convergence == 1
-        Convergence = 'Yes'
+        Convergence = 'Yes';
     else
-        Convergence = 'No'
+        Convergence = 'No';
     end
+    fprintf('\nConvergence = %s \n \n',Convergence);
+    
     diary off
     n = n+1;        
 end
 
 %% saving data in .mat and plotting strains
-% INIT = gdic.u;
-% cd(imageFolder);
-% save('init.mat','INIT','-v7.3')
+INIT = gdic.u;
+cd(imageFolder);
+save('init.mat','INIT','-v7.3')
 % save('h_UGDHC.mat','gdic','crs','-v7.3')
-% save('strains.mat','EXX','EXY','EYY','EXXp','EXYp','EYYp','EXX_proj','EXY_proj','EYY_proj','-v7.3') 
-% save('residual.mat','res','-v7.3')
-% imagenames_set = {imagenames{1}; imagenames{2}; imagenames{end}};
-% save('set_data.mat','ROI_Marges','imagenames_set','-v7.3')
-% 
-% figure; hold on
-% plot(EXX,'b.')
-% plot(EYY,'r.')
+save('strains.mat','EXX','EXY','EYY','EXXp','EXYp','EYYp','EXX_proj','EXY_proj','EYY_proj','-v7.3') 
+save('residual.mat','res','-v7.3')
+imagenames_set = {imagenames{1}; imagenames{2}; imagenames{end}};
+save('set_data.mat','ROI_Marges','imagenames_set','-v7.3')
 
-close all
+figure; hold on
+plot(EXX,'b.')
+plot(EYY,'r.')
+
+% close all
