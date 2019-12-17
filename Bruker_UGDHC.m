@@ -67,13 +67,13 @@ if ~isfolder(imageFolder)
 end
 
 % Get information of images in the folder
-filePattern = fullfile(imageFolder, '*.OPD');  %build full file name from parts
-imagefiles = dir(filePattern);              %create struct with image information
+filePattern = fullfile(imageFolder, '*.OPD');   %build full file name from parts
+imagefiles = dir(filePattern);                  %create struct with image information
 
-for i = 1:length(imagefiles)                %break up name of image for information
+for i = 1:length(imagefiles)                    %break up name of image for information
     ix = strfind(imagefiles(i).name,'d');   
     ixx = strfind(imagefiles(i).name,'_');
-    aa = imagefiles(i).name(ix+1:ixx(2)-1); %get consecutive number of image
+    aa = imagefiles(i).name(ix+1:ixx(2)-1);     %get consecutive number of image
     imagefiles(i).number = (aa);
 end
 
@@ -110,10 +110,10 @@ amountcalculations = length(imagefiles)-1;
 %  =========================
 
 % Determine pixelsize and plot ROI       
-ROI_Marges(1)= 11; %left
-ROI_Marges(2)= 12; %right
-ROI_Marges(3)= 18; %top      
-ROI_Marges(4)= 18; %bottom
+ROI_Marges(1)= 16;      %left
+ROI_Marges(2)= 12;      %right
+ROI_Marges(3)= 19;      %top      
+ROI_Marges(4)= 19;      %bottom
 
 % Size of f (and g)
 [nn, mm] = size(image_f);
@@ -123,7 +123,7 @@ pixelsize = [width_image/mm height_image/nn];
 x = linspace(1,mm*pixelsize(1),mm);
 y = linspace(1,nn*pixelsize(2),nn);
 
-if RegionDet == 1 %plot ROI of reference image
+if RegionDet == 1 %plot ROI on reference image
     figure; hold on
     imagesc(x,y,image_f)
     
@@ -180,15 +180,7 @@ while amountcalculations ~= n-1
     x = x - mean(x);
     y = y - mean(y);
         
-%     f = image_f;
-%     g = image_g;
-%         
-%     H = fspecial('gaussian', [3 3], 0.8) ;
-%     f = imfilter(f,H,'symmetric','conv');
-%     g = imfilter(g,H,'symmetric','conv');
-%     cd(formulaFolder);
-        
-    % Plot the position field figures
+    % logfilename
     gname = char(imagenames(n+1));
     currentfilename = [fname '  -  ' gname '  -  ' pol ' order poly'];
     logfilename = [ currentfilename '.txt'];
@@ -197,29 +189,9 @@ while amountcalculations ~= n-1
     if (exist(logfilename, 'file') == 2)
         delete(logfilename);
     end
-        diary (logfilename)
-        cd(formulaFolder);
-        
-%     if printplot == 1
-%         plotop.name     = [ 'Position field: ' currentfilename] ;
-%         plotop.titles   = {'f','g'};
-%         plotop.colorlabel = {}; 
-%         [HH, B] = globalDICplotposition(x,y,f,g,plotop); 
-%         hold on
-%     end
-
-%     % Save the position field figures
-%     if printpdf == 1
-%         currentfilename = ['Position field  ' fname '  -  ' gname '  -  ' pol ' order poly'];
-%         cd(saveoutcomeFolder);
-% %         savepdf(currentfilename,imageFolder);
-%         savefig(currentfilename)
-%         saveas(gcf,[currentfilename '.png'])
-%         cd(formulaFolder);
-%     end
-            
+    diary (logfilename)
     cd(formulaFolder);
-    
+            
     % =========================
     % Start the digital image correlation
     % =========================
@@ -229,7 +201,7 @@ while amountcalculations ~= n-1
     end
     
     % Generate a full basis for polynomial or chebyshev functions
-    % =================
+    % =========================
     phi = dofbuild_poly(options.order);
 
     % Initial Guess
@@ -238,12 +210,6 @@ while amountcalculations ~= n-1
 
     if n == 1
         u = zeros(Ndof,1)
-%         cd(imageFolder)
-%         uu = load('init.mat');
-%         uuu = struct2cell(uu);
-%         u = uuu{1}
-%         load('h_UGDHC.mat');
-%         cd(formulaFolder)
     else
         if convergence == 1
             u = gdic.u
@@ -256,26 +222,6 @@ while amountcalculations ~= n-1
     options.ROI(2) = x(end) - ROI_Marges(2);
     options.ROI(3) = y(1)   + ROI_Marges(3);
     options.ROI(4) = y(end) - ROI_Marges(4);
-
-%     if printplot == 1
-%         figure; hold on
-%         imagesc(x,y,f);        
-%         plot([options.ROI(1) options.ROI(1) options.ROI(2) options.ROI(2)], ...
-%             [options.ROI(3) options.ROI(4) options.ROI(3) options.ROI(4)],'or')
-%         plot([options.ROI(1) options.ROI(2) options.ROI(2) options.ROI(1) options.ROI(1)], ...
-%             [options.ROI(3) options.ROI(3) options.ROI(4) options.ROI(4) options.ROI(3)],'--r')
-%         set(gca, 'ydir', 'reverse');
-%    end
-
-%     % Save the position field figures with ROI
-%     if printpdf == 1
-%         currentfilename=['Position field with ROI  ' fname '  -  ' gname '  -  ' pol ' order poly'];
-%         cd(saveoutcomeFolder)    
-% %         savepdf(currentfilename,imageFolder);
-%         savefig(currentfilename)
-%         saveas(gcf,[currentfilename '.png'])
-%         cd(formulaFolder);
-%     end                                
             
     cd(formulaFolder);
             
@@ -330,42 +276,6 @@ while amountcalculations ~= n-1
     r_correct = r;
     r_correct(find(NaN_mask == 1)) = NaN;
     gdic.r_correct = r_correct;
-
-%     % Plot residual field
-%     if printplot == 1
-%         plotop.name  = 'Residual' ;
-%         plotop.titles   = {'r'};
-%         plotop.colorlabel = {};
-%         HH = globalDICplotresidual(x,y,r_correct,plotop);
-%     end
-            
-%     % Save the residual field figure(s)
-%     if printpdf == 1
-%         currentfilename = ['Residual field  ' fname '  -  ' gname '  -  ' pol ' order poly'];
-%     	cd(saveoutcomeFolder)
-% %         savepdf(currentfilename,imageFolder);
-%         savefig(currentfilename)
-%         saveas(gcf,[currentfilename '.png'])
-%         cd(formulaFolder)
-%     end
-            
-%     % Plot displacement fields
-%     if printplot == 1
-%         plotop.name = 'Displacement Fields';
-%         plotop.titles = {'Ux','Uy','Uz'};
-%         plotop.colorlabel = {'U_i [\mum]'};
-%         HH = globalDICplotdisplacement(r_correct,x,y,Ux,Uy,Uz,plotop);
-%     end
-            
-%     % Save the displacement fields figure(s)
-%     if printpdf == 1
-%         currentfilename = ['Displacement fields  ' fname '  -  ' gname '  -  ' pol ' order poly'];
-%         cd(saveoutcomeFolder);
-% %         savepdf(currentfilename,imageFolder);
-%         savefig(currentfilename)        
-%         saveas(gcf,[currentfilename '.png'])
-%         cd(formulaFolder)
-%     end                
                                
     % ========================
     % Calculate strain
@@ -405,25 +315,13 @@ while amountcalculations ~= n-1
     EXYp(n) = Exy(strainPoint(2),strainPoint(1));
        
     res(n) = nanmean(nanmean(gdic.r));
-        
-%     % Plot strain fields image(s)
-%     if printplot == 1
-%         plotop.name = 'Strain Fields';
-%         plotop.titles = {'\epsilon_x','\epsilon_y'};
-%         plotop.colorlabel = {'\epsilon [%]'};
-%         cd(formulaFolder);     
-%         HH = globalDICplotstrains(r_correct,x,y,Exx_jan_true,Eyy_jan_true,plotop);
-%     end  
+      
     
-%     % Save strain fields image(s)
-%     if printpdf == 1
-%         currentfilename = ['Strain fields  ' fname '  -  ' gname '  -  ' pol ' order poly'];
-%         cd(saveoutcomeFolder)
-% %         savepdf(currentfilename,imageFolder);
-%         savefig(currentfilename)
-%         saveas(gcf,[currentfilename '.png'])
-%         cd(formulaFolder);     
-%     end
+%     % Plot (and save) position/ROI/displacement/residual/strain field figures
+% 	  if printplot == 1
+%         PrintPlot(INPUT);
+% 	  end
+
 
 %     currentfilename=['GDIC output  ' fname '  -  ' gname];
 %     GDIC_output(s).name=currentfilename;
@@ -464,4 +362,3 @@ figure; hold on
 plot(EXX,'b.')
 plot(EYY,'r.')
 
-% close all

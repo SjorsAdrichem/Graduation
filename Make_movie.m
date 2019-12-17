@@ -1,11 +1,13 @@
 close all; clearvars; clc
 
-imageFolder = 'C:\Users\s130023\Desktop\Bruker data\Test UPy-PEG 10k\Images all';
+imageFolder = 'C:\Users\s130023\Desktop\Bruker data\Test viscose\Images_all';
 filePattern = fullfile(imageFolder, '*.OPD');
 imagefiles = dir(filePattern);
 
-% load('movie'); %RH and strain data = same length as amount of images
-load('RH_movie'); %RH
+load('RH_movie'); %RH and strain data = same length as amount of images
+RH_plot = [0; RH_plot];
+eps_long = [0, eps_long];
+eps_trans = [0, eps_trans];
 
 for i = 1:length(imagefiles)
     names{i} = imagefiles(i).name;
@@ -31,26 +33,24 @@ for i = 1:length(names)
 
     subplot(1,2,2)
     hold on
-    plot(eps_long_final(1:i),'b.')
-    plot(eps_trans_final(1:i),'r.')
-    xlabel('image #'); ylabel('\epsilon [-]')   
-    axis([0 1700 -.1 0.25])
-    yyaxis right
-    plot(RH_plot(1:i),'k.')
-    ylabel('RH [%]')
-    set(gca,'YColor','k','YLim',[30 95],'FontSize',24)
-    legend('\color{blue} \epsilon_{long}','\color{red} \epsilon_{trans}', ...
-        '\color{black} RH')
-    set(legend,'Location','South','Box','On','FontSize',16)
+%     plot(eps_long_final(1:i),'b.')
+%     plot(eps_trans_final(1:i),'r.')
+%     xlabel('image #'); ylabel('\epsilon [-]')   
+%     axis([0 1700 -.1 0.25])
+%     yyaxis right
+%     plot(RH_plot(1:i),'k.')
+%     ylabel('RH [%]')
+%     set(gca,'YColor','k','YLim',[30 95],'FontSize',24)
+%     legend('\color{blue} \epsilon_{long}','\color{red} \epsilon_{trans}', ...
+%         '\color{black} RH')
+%     set(legend,'Location','South','Box','On','FontSize',16)
     
-%     plot(RH_plot(1:i),eps_long(1:i),'b.','linewidth',15)
-%     plot(RH_plot(1:i),eps_trans(1:i),'r.','linewidth',15)
-%     axis([28 90 -0.01 0.35]);
-%     xlabel('Relative Humidity [%]'); ylabel('Strain [-]');
-%     legend('\epsilon_{ll}', '\epsilon_{tt}','location','NorthWest','FontSize',24);
-%     plot(RH_plot(i,2),RH_plot(i,3),'k.','linewidth',15)
-%     xlabel('Time [h]'); ylabel('RH [%]')
-%     set(gca,'FontSize',24)
+    plot(RH_plot(1:i),eps_long(1:i),'b.','linewidth',15)
+    plot(RH_plot(1:i),eps_trans(1:i),'r.','linewidth',15)
+    axis([45 95 -0.005 0.09])
+    xlabel('Relative Humidity [%]'); ylabel('Strain [-]');
+    legend('\epsilon_{ll}', '\epsilon_{tt}','location','NorthWest','FontSize',24);
+    set(gca,'FontSize',24)
 
     set(gcf,'Color','w');
     title(strcat(num2str(i*round(12.8)),' seconds'),'FontSize',24)
@@ -62,7 +62,7 @@ end
 clear imagefiles A x y z eps_long_final eps_trans_final fig1 FileName filePattern h i names names_sort RH_plot
 
 %%
-V = VideoWriter('UPy-PEG_correlated','MPEG-4');
+V = VideoWriter('Viscose swelling','MPEG-4');
 V.FrameRate = 60;
 V.Quality = 100;
 open(V)
